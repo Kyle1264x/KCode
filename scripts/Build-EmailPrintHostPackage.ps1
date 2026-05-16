@@ -73,7 +73,7 @@ Set-Content -LiteralPath (Join-Path -Path $stagingRoot -ChildPath 'START-HERE.tx
 if (Test-Path -LiteralPath $zipPath) {
     Remove-Item -LiteralPath $zipPath -Force
 }
-Compress-Archive -LiteralPath (Join-Path -Path $stagingRoot -ChildPath '*') -DestinationPath $zipPath -Force
+Compress-Archive -Path (Join-Path -Path $stagingRoot -ChildPath '*') -DestinationPath $zipPath -Force
 
 Write-Host "Package folder: $stagingRoot" -ForegroundColor Green
 Write-Host "Package zip   : $zipPath" -ForegroundColor Green

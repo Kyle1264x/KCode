@@ -60,6 +60,8 @@ def test_windows_helper_scripts_exist_for_install_validation_and_easy_setup() ->
     assert "how to find" in host_setup
     assert "Build-EmailPrintHostPackage.ps1" in package_launcher
     assert "Compress-Archive" in package_script
+    assert "Compress-Archive -Path" in package_script
+    assert "Compress-Archive -LiteralPath" not in package_script
     assert "START-HERE.txt" in package_script
 
 
