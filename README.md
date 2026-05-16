@@ -99,6 +99,19 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Build-EmailPri
 
 This creates `dist\EmailPrintHostSetup.zip`. Send that zip to the print PC, extract it, then double-click `Setup-EmailPrintHost.cmd`.
 
+## Publish/conflict checks
+
+Before publishing the branch or building the zip, run these checks from the repo root:
+
+```bash
+python3 -m ruff check .
+python3 -m pytest -q
+git diff --check
+rg -n "^(<<<<<<<|=======$|>>>>>>>)" .
+```
+
+The final `rg` command should return no results. The setup script also refuses to copy worker scripts that contain unresolved merge conflict markers.
+
 ## Manual worker commands
 
 Process the whole queue once:

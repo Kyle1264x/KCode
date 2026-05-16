@@ -6,3 +6,10 @@ __pycache__/
 var/
 config.yaml
 dist/
+# Merge/conflict artifacts
+*.orig
+*.rej
+*.BACKUP.*
+*.BASE.*
+*.LOCAL.*
+*.REMOTE.*

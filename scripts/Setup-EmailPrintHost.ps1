@@ -273,6 +273,10 @@ function Copy-WorkerScripts {
         if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
             throw "Setup package is missing required script: $source"
         }
+        $sourceContent = Get-Content -LiteralPath $source -Raw
+        if ($sourceContent -match '(?m)^(<<<<<<<|=======$|>>>>>>>)') {
+            throw "Setup package contains unresolved merge conflict markers in: $source"
+        }
         $destination = Join-Path -Path $DestinationScripts -ChildPath $scriptName
         if ([System.IO.Path]::GetFullPath($source) -ne [System.IO.Path]::GetFullPath($destination)) {
             Copy-Item -LiteralPath $source -Destination $destination -Force

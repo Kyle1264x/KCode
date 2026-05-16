@@ -199,3 +199,15 @@ Failure triage:
 4. Print the file manually from the print PC.
 5. If manual printing works, add or adjust the command in `print-worker.json`.
 6. Move the corrected job back to `incoming` and recreate `.ready` to retry.
+
+## 11. Publishing and conflict checks
+
+If GitHub or your Git client says the branch has conflicts, check the files it lists for merge markers before publishing:
+
+```bash
+rg -n "^(<<<<<<<|=======$|>>>>>>>)" .gitignore README.md docs/power-automate-setup.md scripts/Setup-EmailPrintHost.ps1 tests/test_power_automate_kit.py
+python3 -m pytest -q
+git diff --check
+```
+
+The `rg` command should return no results. If it does, remove the marker block by keeping the intended final text and deleting the `<<<<<<<`, `=======`, and `>>>>>>>` lines.
