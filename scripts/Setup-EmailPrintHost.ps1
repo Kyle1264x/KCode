@@ -8,6 +8,9 @@ param(
     [int]$EveryMinutes = 1,
     [switch]$NoScheduledTask,
     [switch]$SkipToolInstall,
+    [string]$SumatraPdfPath = 'C:\Program Files\SumatraPDF\SumatraPDF.exe',
+    [int]$EveryMinutes = 1,
+    [switch]$NoScheduledTask,
     [switch]$NonInteractive
 )
 
@@ -27,6 +30,10 @@ function Read-DefaultedInput {
         [Parameter(Mandatory = $true)][string]$Prompt,
         [Parameter(Mandatory = $true)][string]$DefaultValue,
         [string]$HelpText = ''
+function Read-DefaultedInput {
+    param(
+        [Parameter(Mandatory = $true)][string]$Prompt,
+        [Parameter(Mandatory = $true)][string]$DefaultValue
     )
 
     if ($NonInteractive) {
@@ -49,6 +56,7 @@ function Read-YesNo {
         [Parameter(Mandatory = $true)][string]$Prompt,
         [bool]$DefaultYes = $true,
         [string]$HelpText = ''
+        [bool]$DefaultYes = $true
     )
 
     if ($NonInteractive) {
@@ -266,6 +274,7 @@ function Copy-WorkerScripts {
         'Install-EmailPrintScheduledTask.ps1',
         'Test-EmailPrintSetup.ps1',
         'Setup-EmailPrintHost.ps1'
+        'Test-EmailPrintSetup.ps1'
     )
 
     foreach ($scriptName in $scriptNames) {
@@ -281,6 +290,7 @@ function Copy-WorkerScripts {
         if ([System.IO.Path]::GetFullPath($source) -ne [System.IO.Path]::GetFullPath($destination)) {
             Copy-Item -LiteralPath $source -Destination $destination -Force
         }
+        Copy-Item -LiteralPath $source -Destination (Join-Path -Path $DestinationScripts -ChildPath $scriptName) -Force
     }
 }
 
@@ -313,6 +323,21 @@ $archiveSuccessfulJobs = Read-YesNo -Prompt 'Move successfully printed jobs to a
 $installScheduledTask = -not $NoScheduledTask
 if (-not $NoScheduledTask) {
     $installScheduledTask = Read-YesNo -Prompt 'Install Windows Scheduled Task to process the queue every minute?' -DefaultYes $true -HelpText 'Scheduled Task: choose Yes for hands-off operation. Windows will run the queue worker every minute while this user is signed in.'
+Write-Host ''
+
+$InstallRoot = Read-DefaultedInput -Prompt 'Install folder' -DefaultValue $InstallRoot
+$QueueRoot = Read-DefaultedInput -Prompt 'Local synced queue folder' -DefaultValue $QueueRoot
+$DefaultPrinter = Select-PrinterName -CurrentValue $DefaultPrinter
+$enablePdfPrinting = Read-YesNo -Prompt 'Enable PDF attachment printing with SumatraPDF?' -DefaultYes $true
+if ($enablePdfPrinting) {
+    $SumatraPdfPath = Read-DefaultedInput -Prompt 'SumatraPDF path for PDF printing' -DefaultValue $SumatraPdfPath
+}
+$printEmailBody = Read-YesNo -Prompt 'Print the email body when body.txt exists?' -DefaultYes $true
+$printAttachments = Read-YesNo -Prompt 'Print attachments?' -DefaultYes $true
+$archiveSuccessfulJobs = Read-YesNo -Prompt 'Move successfully printed jobs to archive?' -DefaultYes $true
+$installScheduledTask = -not $NoScheduledTask
+if (-not $NoScheduledTask) {
+    $installScheduledTask = Read-YesNo -Prompt 'Install Windows Scheduled Task to process the queue every minute?' -DefaultYes $true
 }
 
 if ($EveryMinutes -lt 1) {
@@ -396,3 +421,4 @@ Write-Host "Logs           : $(Join-Path -Path $QueueRoot -ChildPath 'logs\print
 Write-Host ''
 Write-Host 'Next step: configure the Power Automate cloud flow for the mailbox above. Sign in through Microsoft; do not save the mailbox password in these files.' -ForegroundColor Yellow
 Write-Host 'The cloud flow must create job folders in the incoming folder and write .ready last.' -ForegroundColor Yellow
+Write-Host 'Next step: configure the Power Automate cloud flow to create job folders in the incoming folder and write .ready last.' -ForegroundColor Yellow

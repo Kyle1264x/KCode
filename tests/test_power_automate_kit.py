@@ -5,6 +5,7 @@ from pathlib import Path
 
 SCRIPTS = Path("scripts")
 
+
 def test_config_template_has_required_windows_queue_and_print_settings() -> None:
     config = json.loads(Path("config/print-worker.example.json").read_text(encoding="utf-8"))
 
@@ -18,6 +19,7 @@ def test_config_template_has_required_windows_queue_and_print_settings() -> None
     assert ".pdf" in config["SupportedExtensions"]
     assert "SumatraPDF.exe" in config["SupportedExtensions"][".pdf"]["Command"]
 
+
 def test_worker_scripts_are_windows_powershell_compatible_and_safe() -> None:
     job_script = (SCRIPTS / "Invoke-EmailPrintJob.ps1").read_text(encoding="utf-8")
     queue_script = (SCRIPTS / "Invoke-EmailPrintQueue.ps1").read_text(encoding="utf-8")
@@ -29,6 +31,7 @@ def test_worker_scripts_are_windows_powershell_compatible_and_safe() -> None:
     assert "WaitForExit($timeoutSeconds * 1000)" in job_script
     assert "print-worker.lock" in queue_script
     assert "[System.IO.FileShare]::None" in queue_script
+
 
 def test_windows_helper_scripts_exist_for_install_validation_and_easy_setup() -> None:
     install_script = (SCRIPTS / "Install-EmailPrintScheduledTask.ps1").read_text(encoding="utf-8")
@@ -61,6 +64,9 @@ def test_windows_helper_scripts_exist_for_install_validation_and_easy_setup() ->
     assert "Compress-Archive -Path" in package_script
     assert "Compress-Archive -LiteralPath" not in package_script
     assert "START-HERE.txt" in package_script
+    assert "NonInteractive" in host_setup
+    assert "Setup-EmailPrintHost.ps1" in cmd_launcher
+
 
 def test_documentation_describes_windows_cloud_flow_contract() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
