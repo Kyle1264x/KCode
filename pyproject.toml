@@ -1,0 +1,19 @@
+[project]
+name = "power-automate-email-print-kit"
+version = "0.1.0"
+description = "Power Automate and dedicated Windows print PC kit for email-to-print workflows."
+readme = "README.md"
+requires-python = ">=3.11"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.5.0",
+]
+
+[tool.ruff]
+line-length = 100
+src = ["tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

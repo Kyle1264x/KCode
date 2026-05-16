@@ -1,0 +1,22 @@
+{
+  "QueueRoot": "C:\\EmailPrintQueue",
+  "IncomingFolder": "incoming",
+  "ArchiveFolder": "archive",
+  "FailedFolder": "failed",
+  "LogFolder": "logs",
+  "DefaultPrinter": "Front Office Printer",
+  "PrintEmailBody": true,
+  "PrintAttachments": true,
+  "ArchiveSuccessfulJobs": true,
+  "CommandTimeoutSeconds": 120,
+  "SupportedExtensions": {
+    ".pdf": {
+      "Command": "C:\\Program Files\\SumatraPDF\\SumatraPDF.exe",
+      "Arguments": ["-print-to", "{Printer}", "-silent", "{File}"]
+    },
+    ".txt": {
+      "Command": "notepad.exe",
+      "Arguments": ["/p", "{File}"]
+    }
+  }
+}
