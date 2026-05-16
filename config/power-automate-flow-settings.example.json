@@ -1,0 +1,12 @@
+{
+  "MailboxAddress": "abricoh@outlook.com",
+  "QueueRootName": "EmailPrintQueue",
+  "IncomingFolder": "incoming",
+  "AttachmentFolder": "attachments",
+  "ReadyMarkerName": ".ready",
+  "EmailBodyFileName": "body.txt",
+  "JobMetadataFileName": "job.json",
+  "QueuedMailboxFolder": "Queued for Print",
+  "PrintedMailboxFolder": "Printed",
+  "FailedMailboxFolder": "Print Failed"
+}
