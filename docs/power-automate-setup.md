@@ -8,6 +8,8 @@ Use this build when the client wants a fast, reliable replacement for Outlook/Sp
 - Windows PowerShell 5.1, which ships with modern Windows.
 - A local Windows user that stays signed in if you use OneDrive sync plus Task Scheduler.
 - The target printer installed and tested for that same Windows user.
+- OneDrive sync or SharePoint sync for the queue folder. Setup can install OneDrive if it is missing, but you still need to sign in and choose the synced queue folder.
+- SumatraPDF installed if PDF attachments need silent printing. Setup can install it automatically with `winget`.
 - OneDrive sync or SharePoint sync for the queue folder.
 - SumatraPDF installed if PDF attachments need silent printing.
 
@@ -26,6 +28,10 @@ If licensing or unattended-session behavior is a concern, use the scheduled-task
    Get-Printer | Select-Object Name
    ```
 
+5. Copy this repository folder to the PC and run `Setup-EmailPrintHost.cmd`.
+6. Let setup install OneDrive and SumatraPDF if they are missing.
+7. Sign in to OneDrive and sync the chosen queue folder, or sync the SharePoint document library.
+8. Setup creates `C:\EmailPrint`, `print-worker.json`, and the queue root for you. By default, the queue root is `C:\EmailPrintQueue` with these subfolders:
 5. Install OneDrive and sync the chosen queue folder, or sync the SharePoint document library.
 6. Install SumatraPDF for silent PDF printing if PDFs are required.
 7. Create `C:\EmailPrint` and copy this repository's `scripts` folder there.
@@ -36,6 +42,19 @@ If licensing or unattended-session behavior is a concern, use the scheduled-task
    - `failed`
    - `logs`
 
+## 3. Build one easy setup package
+
+For the easiest download/copy experience, build a zip package first:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Build-EmailPrintHostPackage.ps1
+```
+
+This creates `dist\EmailPrintHostSetup.zip`. Copy that zip to the print PC, extract it, open `START-HERE.txt` if needed, then run the setup launcher.
+
+## 4. Run the easy host setup
+
+The easiest path on the Windows print PC is to run the setup launcher:
 ## 3. Run the easy host setup
 
 The easiest path is to copy this repository folder to the Windows print PC and run the setup launcher:
@@ -50,6 +69,11 @@ You can also run the PowerShell installer directly:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Setup-EmailPrintHost.ps1
 ```
 
+The setup asks for the items below. Each prompt includes short help text explaining what the value is and how to find it:
+
+- install folder, usually `C:\EmailPrint`
+- local synced queue folder, usually `C:\EmailPrintQueue`
+- Outlook mailbox, defaulting to `abricoh@outlook.com`
 The setup asks for:
 
 - install folder, usually `C:\EmailPrint`
@@ -60,6 +84,10 @@ The setup asks for:
 - whether to print email bodies
 - whether to print attachments
 - whether to archive successful jobs
+- whether to install missing tools automatically with `winget`
+- whether to install the scheduled task
+
+The setup creates the queue folders, copies scripts to the install folder, checks for SumatraPDF and OneDrive, installs missing tools with Windows Package Manager (`winget`) when you approve it, writes `print-worker.json` and `power-automate-flow-settings.json`, validates the printer and print commands, and can install the recurring scheduled task.
 - whether to install the scheduled task
 
 The setup creates the queue folders, copies scripts to the install folder, writes `print-worker.json`, validates the printer and print commands, and can install the recurring scheduled task.
@@ -67,6 +95,16 @@ The setup creates the queue folders, copies scripts to the install folder, write
 Non-interactive install example for repeat deployments:
 
 ```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Setup-EmailPrintHost.ps1 -InstallRoot C:\EmailPrint -QueueRoot C:\EmailPrintQueue -DefaultPrinter "Front Office Printer" -MailboxAddress abricoh@outlook.com -SumatraPdfPath "C:\Program Files\SumatraPDF\SumatraPDF.exe" -EveryMinutes 1 -NonInteractive
+```
+
+If you want setup to create folders and config but **not** install missing tools, add `-SkipToolInstall`:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Setup-EmailPrintHost.ps1 -SkipToolInstall
+```
+
+## 5. Manual configuration and validation
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Setup-EmailPrintHost.ps1 -InstallRoot C:\EmailPrint -QueueRoot C:\EmailPrintQueue -DefaultPrinter "Front Office Printer" -SumatraPdfPath "C:\Program Files\SumatraPDF\SumatraPDF.exe" -EveryMinutes 1 -NonInteractive
 ```
 
@@ -87,6 +125,11 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\EmailPrint\scripts\Te
 
 The validator confirms the queue root exists, the printer is installed, and every configured print command is available on Windows.
 
+## 6. Cloud flow design
+
+Create an automated cloud flow for `abricoh@outlook.com`. Do **not** paste the Outlook password into these scripts, the repository, or the generated job files. Power Automate should authenticate the mailbox through Microsoft's Outlook connector sign-in prompt/OAuth connection.
+
+1. Trigger: **When a new email arrives** for the Outlook mailbox `abricoh@outlook.com`.
 ## 5. Cloud flow design
 
 Create an automated cloud flow:
@@ -96,6 +139,25 @@ Create an automated cloud flow:
    - Optional sender allow-list.
    - Optional subject keyword or category filter.
    - Optional attachment-required check.
+3. Use the settings in `config/power-automate-flow-settings.example.json` as the cloud-flow naming contract.
+4. Compose a unique `JobId`, for example:
+   - received timestamp formatted as `yyyyMMdd-HHmmss`
+   - message id hash or short GUID
+5. Create folder: `EmailPrintQueue/incoming/<JobId>`.
+6. Create folder: `EmailPrintQueue/incoming/<JobId>/attachments`.
+7. Create `job.json` containing metadata such as sender, subject, received time, message id, and attachment count.
+8. Create `body.txt` from the email body if email-body printing is required.
+9. For each attachment, create a file under `attachments` using the attachment name.
+10. Create `.ready` as the final file in the job folder.
+11. Move the email to a mailbox folder such as `Queued for Print` or mark it with a category.
+
+The `.ready` marker is important because OneDrive/SharePoint sync can expose a folder before all files are present. The local worker ignores folders until `.ready` exists.
+
+### Password and account handling
+
+You can provide the password when you are physically setting up the Power Automate Outlook connection, but do not send it in chat and do not save it in this repo. The local Windows print worker does not need the Outlook password. The only component that signs into `abricoh@outlook.com` is the Power Automate cloud flow connection.
+
+## 7. Recommended Windows Task Scheduler pattern
 3. Compose a unique `JobId`, for example:
    - received timestamp formatted as `yyyyMMdd-HHmmss`
    - message id hash or short GUID
@@ -127,6 +189,7 @@ Manual one-time queue run:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\EmailPrint\scripts\Invoke-EmailPrintQueue.ps1 -ConfigPath C:\EmailPrint\print-worker.json
 ```
 
+## 8. Optional Power Automate Desktop pattern
 ## 7. Optional Power Automate Desktop pattern
 
 If you have unattended Power Automate Desktop capacity, the cloud flow can run a desktop flow on the print PC after it creates `.ready`.
@@ -147,6 +210,7 @@ Recommended desktop flow actions:
 
 Power Automate Desktop also has a built-in **Print document** workstation action, but this kit uses an explicit PowerShell worker so file-type handling, logging, archiving, timeout handling, and failures are consistent.
 
+## 9. File type policy
 ## 8. File type policy
 
 Start with PDFs only if possible. Add other extensions only after testing them on the print PC.
@@ -159,6 +223,7 @@ Recommended initial policy:
 - Images: add only after testing a dedicated image-print command.
 - ZIP files: do not auto-print; route to failed/manual review.
 
+## 10. Support process
 ## 9. Support process
 
 Daily checks:
@@ -177,3 +242,15 @@ Failure triage:
 4. Print the file manually from the print PC.
 5. If manual printing works, add or adjust the command in `print-worker.json`.
 6. Move the corrected job back to `incoming` and recreate `.ready` to retry.
+
+## 11. Publishing and conflict checks
+
+If GitHub or your Git client says the branch has conflicts, check the files it lists for merge markers before publishing:
+
+```bash
+rg -n "^(<<<<<<<|=======$|>>>>>>>)" .gitignore README.md docs/power-automate-setup.md scripts/Setup-EmailPrintHost.ps1 tests/test_power_automate_kit.py
+python3 -m pytest -q
+git diff --check
+```
+
+The `rg` command should return no results. If it does, remove the marker block by keeping the intended final text and deleting the `<<<<<<<`, `=======`, and `>>>>>>>` lines.
